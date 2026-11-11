@@ -1,0 +1,188 @@
+@prefix :     <http://example.org/cumbres/catalogo#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+<http://example.org/cumbres/catalogo> a owl:Ontology ;
+    dct:title "Catálogo de Datos y Gobernanza Institucional"@es ;
+    dct:creator "Equipo de Ingeniería de Datos" ;
+    owl:versionInfo "1.0" ;
+    rdfs:comment "Ontología institucional para auditoría de linaje de datos, catalogación, gobernanza de privacidad y retención documental en ITIC."@es .
+
+# =============================================================================
+# CLASES (14 clases)
+# =============================================================================
+
+:ActivoDeInformacion a owl:Class ;
+    rdfs:subClassOf prov:Entity ;
+    rdfs:label "Activo de información"@es ;
+    rdfs:comment "Cualquier recurso lógico o estructurado que almacena o procesa datos institucionales."@es .
+
+:FuenteDeDatos a owl:Class ;
+    rdfs:subClassOf :ActivoDeInformacion ;
+    rdfs:label "Fuente de datos"@es ;
+    rdfs:comment "Sistema de base de datos o repositorio primario donde residen los datos institucionales."@es .
+
+:BaseDeDatosTransaccional a owl:Class ;
+    rdfs:subClassOf :FuenteDeDatos ;
+    rdfs:label "Base de datos transaccional"@es ;
+    rdfs:comment "Base de datos orientada al procesamiento transaccional diario (OLTP)."@es .
+
+:DataWarehouse a owl:Class ;
+    rdfs:subClassOf :FuenteDeDatos ;
+    owl:disjointWith :BaseDeDatosTransaccional ;
+    rdfs:label "Almacén de datos (Data Warehouse)"@es ;
+    rdfs:comment "Repositorio analítico unificado orientado a consultas y tableros institucionales."@es .
+
+:ConjuntoDeDatos a owl:Class ;
+    rdfs:subClassOf :ActivoDeInformacion , dcat:Dataset ;
+    rdfs:label "Conjunto de datos"@es ;
+    rdfs:comment "Colección estructurada de datos organizada en filas y columnas."@es .
+
+:Tabla a owl:Class ;
+    rdfs:subClassOf :ConjuntoDeDatos ;
+    rdfs:label "Tabla relacional"@es ;
+    rdfs:comment "Estructura tabular bidimensional persistente en una base de datos."@es .
+
+:VistaAnalitica a owl:Class ;
+    rdfs:subClassOf :ConjuntoDeDatos ;
+    rdfs:label "Vista analítica"@es ;
+    rdfs:comment "Conjunto de datos virtual o materializado producto de agregaciones analíticas."@es .
+
+:Columna a owl:Class ;
+    rdfs:subClassOf :ActivoDeInformacion ;
+    rdfs:label "Columna"@es ;
+    rdfs:comment "Campo o atributo individual que forma parte de una tabla o conjunto de datos."@es .
+
+:Reporte a owl:Class ;
+    rdfs:subClassOf :ActivoDeInformacion ;
+    rdfs:label "Reporte / Tablero analítico"@es ;
+    rdfs:comment "Instrumento analítico visual para consulta, métricas y toma de decisiones."@es .
+
+:ProcesoETL a owl:Class ;
+    rdfs:subClassOf prov:Activity ;
+    rdfs:label "Proceso ETL"@es ;
+    rdfs:comment "Pipeline de extracción, transformación y carga que traslada y transforma datos entre orígenes y destinos."@es .
+
+:NivelConfidencialidad a owl:Class ;
+    rdfs:label "Nivel de confidencialidad"@es ;
+    rdfs:comment "Grado de clasificación legal y de reserva aplicable a un activo de información."@es .
+
+:TipoDatoPersonal a owl:Class ;
+    rdfs:label "Tipo de dato personal"@es ;
+    rdfs:comment "Categorización jurídica de la información concerniente a personas físicas conforme a la ley."@es .
+
+:Custodio a owl:Class ;
+    rdfs:subClassOf prov:Agent ;
+    rdfs:label "Custodio de datos"@es ;
+    rdfs:comment "Rol o persona responsable institucional de la gobernanza, precisión y acceso a un activo de datos."@es .
+
+:Departamento a owl:Class ;
+    rdfs:subClassOf prov:Agent ;
+    owl:disjointWith :Custodio ;
+    rdfs:label "Departamento institucional"@es ;
+    rdfs:comment "Unidad organizacional o administrativa que administra activos o custodia datos."@es .
+
+# =============================================================================
+# PROPIEDADES DE OBJETO (9 propiedades)
+# =============================================================================
+
+:perteneceAFuente a owl:ObjectProperty ;
+    rdfs:domain :ConjuntoDeDatos ;
+    rdfs:range :FuenteDeDatos ;
+    rdfs:label "pertenece a fuente"@es ;
+    rdfs:comment "Relaciona un conjunto de datos o tabla con la base de datos o repositorio donde está alojado."@es .
+
+:tieneColumna a owl:ObjectProperty ;
+    rdfs:domain :ConjuntoDeDatos ;
+    rdfs:range :Columna ;
+    rdfs:label "tiene columna"@es ;
+    rdfs:comment "Indica qué columnas conforman un conjunto de datos o tabla."@es .
+
+:tieneCustodio a owl:ObjectProperty ;
+    rdfs:domain :ConjuntoDeDatos ;
+    rdfs:range :Custodio ;
+    rdfs:subPropertyOf prov:wasAttributedTo ;
+    rdfs:label "tiene custodio"@es ;
+    rdfs:comment "Asigna la responsabilidad formal de custodia de un conjunto de datos a un custodio."@es .
+
+:adscritoA a owl:ObjectProperty ;
+    rdfs:domain :Custodio ;
+    rdfs:range :Departamento ;
+    rdfs:label "adscrito a"@es ;
+    rdfs:comment "Indica a qué departamento institucional pertenece formalmente un custodio."@es .
+
+:administradoPor a owl:ObjectProperty ;
+    rdfs:domain :FuenteDeDatos ;
+    rdfs:range :Departamento ;
+    rdfs:label "administrado por"@es ;
+    rdfs:comment "Indica qué área o departamento administra la base de datos de origen."@es .
+
+:tieneClasificacion a owl:ObjectProperty ;
+    rdfs:domain :Columna ;
+    rdfs:range :TipoDatoPersonal ;
+    rdfs:label "tiene clasificación"@es ;
+    rdfs:comment "Vincula una columna con la categoría jurídica de datos personales que almacena."@es .
+
+:tieneNivel a owl:ObjectProperty ;
+    rdfs:domain :ActivoDeInformacion ;
+    rdfs:range :NivelConfidencialidad ;
+    rdfs:label "tiene nivel"@es ;
+    rdfs:comment "Asocia un activo de información o columna con su nivel de seguridad y confidencialidad."@es .
+
+:leeDe a owl:ObjectProperty ;
+    rdfs:domain :ProcesoETL ;
+    rdfs:range :ConjuntoDeDatos ;
+    rdfs:subPropertyOf prov:used ;
+    rdfs:label "lee de"@es ;
+    rdfs:comment "Identifica los conjuntos de datos consumidos o leídos por un proceso ETL."@es .
+
+:escribeEn a owl:ObjectProperty ;
+    rdfs:domain :ProcesoETL ;
+    rdfs:range :ConjuntoDeDatos ;
+    rdfs:label "escribe en"@es ;
+    rdfs:comment "Identifica el conjunto de datos destino alimentado por el proceso ETL."@es .
+
+:consultaA a owl:ObjectProperty ;
+    rdfs:domain :Reporte ;
+    rdfs:range :ConjuntoDeDatos ;
+    rdfs:label "consulta a"@es ;
+    rdfs:comment "Indica qué tabla o vista analítica es leída directamente por un reporte o dashboard."@es .
+
+:dependeDe a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:domain :ActivoDeInformacion ;
+    rdfs:range :ActivoDeInformacion ;
+    rdfs:label "depende de"@es ;
+    rdfs:comment "Propiedad transitiva que modela el linaje e impacto indirecto entre activos de información."@es .
+
+# =============================================================================
+# PROPIEDADES DE DATOS (4 propiedades)
+# =============================================================================
+
+:mesesRetencion a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :ConjuntoDeDatos ;
+    rdfs:range xsd:integer ;
+    rdfs:label "meses de retención"@es ;
+    rdfs:comment "Número máximo de meses reglamentarios permitidos para la conservación del activo."@es .
+
+:fechaCreacion a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :ConjuntoDeDatos ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "fecha de creación"@es ;
+    rdfs:comment "Fecha y hora en que se creó o aprovisionó el conjunto de datos (usa xsd:dateTime)."@es .
+
+:esDatoSensible a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :TipoDatoPersonal ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "es dato sensible"@es ;
+    rdfs:comment "Bandera booleana que indica si el dato personal pertenece a una categoría especialmente protegida."@es .
+
+:correoInstitucional a owl:DatatypeProperty ;
+    rdfs:domain :Custodio ;
+    rdfs:range xsd:string ;
+    rdfs:label "correo institucional"@es ;
+    rdfs:comment "Dirección de correo electrónico de contacto institucional del custodio."@es .

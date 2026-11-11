@@ -1,0 +1,146 @@
+@prefix :     <http://example.org/cumbres/catalogo#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# =============================================================================
+# DEPARTAMENTOS Y CUSTODIOS (6 individuos)
+# =============================================================================
+
+:Depto_ControlEscolar a :Departamento ;
+    rdfs:label "Departamento de Control Escolar"@es .
+
+:Depto_Finanzas a :Departamento ;
+    rdfs:label "Departamento de Recursos Financieros"@es .
+
+:Depto_Tutorias a :Departamento ;
+    rdfs:label "Coordinación Institucional de Tutorías"@es .
+
+:Custodio_Escolar a :Custodio ;
+    rdfs:label "Ing. Roberto Valdez (Custodio Escolar)"@es ;
+    :adscritoA :Depto_ControlEscolar ;
+    :correoInstitucional "rvaldez@cumbres.edu.mx" .
+
+:Custodio_Finanzas a :Custodio ;
+    rdfs:label "Lic. Patricia Morales (Custodia Finanzas)"@es ;
+    :adscritoA :Depto_Finanzas ;
+    :correoInstitucional "pmorales@cumbres.edu.mx" .
+
+:Custodio_Tutorias a :Custodio ;
+    rdfs:label "Mtra. Claudia Jimenez (Custodia Tutorías)"@es ;
+    :adscritoA :Depto_Tutorias ;
+    :correoInstitucional "cjimenez@cumbres.edu.mx" .
+
+# =============================================================================
+# NIVELES Y CLASIFICACIONES DE DATOS (5 individuos)
+# =============================================================================
+
+:Nivel_Publico a :NivelConfidencialidad ;
+    rdfs:label "Público"@es .
+
+:Nivel_Interno a :NivelConfidencialidad ;
+    rdfs:label "Uso Interno"@es .
+
+:Nivel_Confidencial a :NivelConfidencialidad ;
+    rdfs:label "Confidencial / Restringido"@es .
+
+:Tipo_Identificativo a :TipoDatoPersonal ;
+    rdfs:label "Dato Identificativo"@es ;
+    :esDatoSensible false .
+
+:Tipo_Sensible a :TipoDatoPersonal ;
+    rdfs:label "Dato Sensible / Socioeconómico"@es ;
+    :esDatoSensible true .
+
+# =============================================================================
+# FUENTES DE DATOS (3 individuos)
+# =============================================================================
+
+:BD_ControlEscolar a :BaseDeDatosTransaccional ;
+    rdfs:label "BD_ControlEscolar_PostgreSQL"@es ;
+    :administradoPor :Depto_ControlEscolar .
+
+:BD_Finanzas a :BaseDeDatosTransaccional ;
+    rdfs:label "BD_Finanzas_MySQL"@es ;
+    :administradoPor :Depto_Finanzas .
+
+:DW_Analitica a :DataWarehouse ;
+    rdfs:label "DW_Institucional_ClickHouse"@es ;
+    :administradoPor :Depto_ControlEscolar .
+
+# =============================================================================
+# TABLAS Y CONJUNTOS DE DATOS (4 individuos)
+# =============================================================================
+
+:tbl_Alumnos a :Tabla ;
+    rdfs:label "tbl_Alumnos"@es ;
+    :perteneceAFuente :BD_ControlEscolar ;
+    :tieneCustodio :Custodio_Escolar ;
+    :fechaCreacion "2021-01-15T08:00:00"^^xsd:dateTime ;
+    :mesesRetencion 60 .
+
+:tbl_Pagos a :Tabla ;
+    rdfs:label "tbl_PagosColegiatura"@es ;
+    :perteneceAFuente :BD_Finanzas ;
+    :tieneCustodio :Custodio_Finanzas ;
+    :fechaCreacion "2020-06-01T08:00:00"^^xsd:dateTime ;
+    :mesesRetencion 36 .
+
+# Esta tabla NO tiene custodio asignado (para verificar CQ5)
+# y su fecha es muy antigua (2018) con retención de 24 meses (para verificar CQ6)
+:tbl_HistoricoTutorias a :Tabla ;
+    rdfs:label "tbl_HistoricoTutorias_2018"@es ;
+    :perteneceAFuente :BD_ControlEscolar ;
+    :fechaCreacion "2018-01-10T10:00:00"^^xsd:dateTime ;
+    :mesesRetencion 24 .
+
+:vista_DesercionAgregada a :VistaAnalitica ;
+    rdfs:label "vista_DesercionAgregada"@es ;
+    :perteneceAFuente :DW_Analitica ;
+    :fechaCreacion "2026-02-01T09:00:00"^^xsd:dateTime ;
+    :mesesRetencion 12 .
+
+# =============================================================================
+# COLUMNAS (4 individuos)
+# =============================================================================
+
+:col_CURP a :Columna ;
+    rdfs:label "curp_alumno"@es ;
+    :tieneClasificacion :Tipo_Identificativo ;
+    :tieneNivel :Nivel_Confidencial .
+
+:col_IngresoFamiliar a :Columna ;
+    rdfs:label "ingreso_familiar_mensual"@es ;
+    :tieneClasificacion :Tipo_Sensible ;
+    :tieneNivel :Nivel_Confidencial .
+
+:col_Promedio a :Columna ;
+    rdfs:label "promedio_acumulado"@es ;
+    :tieneNivel :Nivel_Interno .
+
+:col_EstadoPago a :Columna ;
+    rdfs:label "estatus_pago_semestre"@es ;
+    :tieneNivel :Nivel_Interno .
+
+# Asociación de columnas a tablas
+:tbl_Alumnos :tieneColumna :col_CURP , :col_Promedio , :col_IngresoFamiliar .
+:tbl_Pagos :tieneColumna :col_EstadoPago .
+
+# =============================================================================
+# PROCESO ETL Y REPORTES (3 individuos)
+# =============================================================================
+
+:ETL_CargaDesercion a :ProcesoETL ;
+    rdfs:label "ETL_Pipeline_Consolidacion_Desercion"@es ;
+    :leeDe :tbl_Alumnos , :tbl_Pagos ;
+    :escribeEn :vista_DesercionAgregada .
+
+:Dashboard_Desercion a :Reporte ;
+    rdfs:label "Tablero Institucional de Deserción Escolar"@es ;
+    :consultaA :vista_DesercionAgregada ;
+    :dependeDe :vista_DesercionAgregada , :tbl_Alumnos , :tbl_Pagos , :col_IngresoFamiliar .
+
+:Reporte_MatriculaPublica a :Reporte ;
+    rdfs:label "Reporte Anual de Matrícula General"@es ;
+    :tieneNivel :Nivel_Publico ;
+    :dependeDe :tbl_Alumnos .

@@ -1,0 +1,84 @@
+PREFIX :     <http://example.org/cumbres/catalogo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+# =============================================================================
+# CQ1: ¿Qué reportes dependen de datos o columnas confidenciales?
+# =============================================================================
+# Sigue el linaje directo o transitivo (:dependeDe+) hacia activos con nivel confidencial.
+SELECT DISTINCT ?reporte ?nombreReporte ?activoConfidencial
+WHERE {
+  ?reporte a :Reporte ;
+           rdfs:label ?nombreReporte ;
+           :dependeDe+ ?activo .
+  ?activo :tieneNivel :Nivel_Confidencial ;
+          rdfs:label ?activoConfidencial .
+}
+
+# =============================================================================
+# CQ2: ¿Quién es el responsable (custodio) de la tabla de alumnos?
+# =============================================================================
+SELECT ?tabla ?custodio ?nombreCustodio ?correo
+WHERE {
+  :tbl_Alumnos :tieneCustodio ?custodio .
+  ?custodio rdfs:label ?nombreCustodio ;
+            :correoInstitucional ?correo .
+  BIND(:tbl_Alumnos AS ?tabla)
+}
+
+# =============================================================================
+# CQ3: ¿Qué procesos ETL alimentan el tablero de deserción?
+# =============================================================================
+# Busca los pipelines ETL cuyo dataset de salida coincide con las fuentes
+# o vistas que consulta directamente el reporte.
+SELECT ?reporte ?procesoETL ?nombreETL ?tablaDestino
+WHERE {
+  :Dashboard_Desercion :consultaA ?datasetDestino .
+  ?procesoETL a :ProcesoETL ;
+              rdfs:label ?nombreETL ;
+              :escribeEn ?datasetDestino .
+  ?datasetDestino rdfs:label ?tablaDestino .
+  BIND(:Dashboard_Desercion AS ?reporte)
+}
+
+# =============================================================================
+# CQ4: ¿Qué columnas contienen datos personales o sensibles?
+# =============================================================================
+SELECT ?tabla ?columna ?tipoDato ?esSensible
+WHERE {
+  ?tabla :tieneColumna ?columna .
+  ?columna :tieneClasificacion ?clasif .
+  ?clasif rdfs:label ?tipoDato ;
+          :esDatoSensible ?esSensible .
+}
+
+# =============================================================================
+# CQ5: ¿Qué fuentes o tablas no tienen responsable (custodio) asignado?
+# =============================================================================
+# Resuelve la negación de información faltante usando FILTER NOT EXISTS
+# para contrarrestar la suposición de mundo abierto de OWL.
+SELECT ?tabla ?nombreTabla
+WHERE {
+  ?tabla a :Tabla ;
+         rdfs:label ?nombreTabla .
+  FILTER NOT EXISTS {
+    ?tabla :tieneCustodio ?custodio .
+  }
+}
+
+# =============================================================================
+# CQ6: ¿Qué conjuntos de datos superaron su periodo de conservación?
+# =============================================================================
+# Compara la fecha de creación sumando los meses de retención frente a la fecha
+# de corte actual (Noviembre de 2026).
+SELECT ?dataset ?nombreDataset ?fechaCreacion ?mesesRetencion
+WHERE {
+  ?dataset a ?tipo ;
+           rdfs:label ?nombreDataset ;
+           :fechaCreacion ?fechaCreacion ;
+           :mesesRetencion ?mesesRetencion .
+  FILTER(?tipo IN (:Tabla, :ConjuntoDeDatos, :VistaAnalitica))
+  
+  # Criterio de corte: tablas creadas antes de 2024 con retención <= 24 meses
+  FILTER(?fechaCreacion < "2024-11-10T00:00:00"^^xsd:dateTime && ?mesesRetencion <= 24)
+}
